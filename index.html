@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        /* First row: Width, Height, Algorithm, Density Control */
+        .controls .control-group:nth-child(1) { /* Width */
+            grid-column: 1;
+            grid-row: 1;
+        }
+        
+        .controls .control-group:nth-child(2) { /* Height */
+            grid-column: 2;
+            grid-row: 1;
+        }
+        
+        .controls .control-group:nth-child(3) { /* Algorithm */
+            grid-column: 3;
+            grid-row: 1;
+        }
+        
+        .controls .control-group:nth-child(4) { /* Density Control */
+            grid-column: 4;
+            grid-row: 1;
+        }
+        
+        /* Second row: Cell Size, Start, End */
+        .controls .control-group:nth-child(5) { /* Cell Size */
+            grid-column: 1;
+            grid-row: 2;
+        }
+        
+        .controls .coordinate-group:nth-child(6) { /* Start */
+            grid-column: 2;
+            grid-row: 2;
+        }
+        
+        .controls .coordinate-group:nth-child(7) { /* End */
+            grid-column: 3;
+            grid-row: 2;
+        }
+        
+        .coordinate-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .coordinate-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .coordinate-input {
+            flex: 1;
+        }
+        
+        .coordinate-label {
+            font-weight: 500;
+            color: #2c3e50;
+            min-width: 15px;
+        }
+        
+        @media (max-width: 1200px) {
+            .controls {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        input, select {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        
+        .canvas-container {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        canvas {
+            border: 3px solid #2c3e50;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            background: white;
+        }
+        
+        .info {
+            text-align: center;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .algorithm-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f3e5f5;
+            border-radius: 8px;
+            border-left: 4px solid #9c27b0;
+        }
+        
+        .algorithm-info h3 {
+            margin-top: 0;
+            color: #7b1fa2;
+        }
+        
+        .debug-console {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+            color: #ffffff;
+            font-family: 'Consolas', 'Monaco', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .debug-console h3 {
+            margin-top: 0;
+            color: #4caf50;
+            font-size: 1.1em;
+        }
+        
+        #consoleOutput {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+        
+        .console-clear-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .console-clear-btn:hover {
+            background: #d84315;
+        }
+        
+        .console-entry {
+            margin-bottom: 4px;
+        }
+        
+        .console-timestamp {
+            color: #888;
+            font-size: 11px;
+        }
+        
+        .console-message {
+            color: #4caf50;
+        }
+        
+        .console-error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌀 Maze Generator</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="width">Width:</label>
+                <input type="number" id="width" min="5" max="100" value="25">
+            </div>
+            
+            <div class="control-group">
+                <label for="height">Height:</label>
+                <input type="number" id="height" min="5" max="100" value="25">
+            </div>
+            
+            <div class="control-group">
+                <label for="algorithm">Algorithm:</label>
+                <select id="algorithm">
+                    <option value="recursive-backtracking">Recursive Backtracking</option>
+                    <option value="sidewinder">Sidewinder</option>
+                    <option value="maze-islands">Maze Islands</option>
+                </select>
+            </div>
+            
+            <div class="control-group" id="densityControl" style="display: none;">
+                <label for="wallDensity">Number of Islands:</label>
+                <input type="range" id="wallDensity" min="0.3" max="0.9" step="0.1" value="0.6">
+                <span id="densityValue">0.6</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="cellSize">Cell Size:</label>
+                <input type="number" id="cellSize" min="5" max="30" value="15">
+            </div>
+            
+            <div class="coordinate-group">
+                <label>Start:</label>
+                <div class="coordinate-row">
+                    <span class="coordinate-label">X:</span>
+                    <input type="number" id="startX" class="coordinate-input" min="0" max="24" value="0">
+                    <span class="coordinate-label">Y:</span>
+                    <input type="number" id="startY" class="coordinate-input" min="0" max="24" value="0">
+                </div>
+            </div>
+            
+            <div class="coordinate-group">
+                <label>End:</label>
+                <div class="coordinate-row">
+                    <span class="coordinate-label">X:</span>
+                    <input type="number" id="endX" class="coordinate-input" min="0" max="24" value="24">
+                    <span class="coordinate-label">Y:</span>
+                    <input type="number" id="endY" class="coordinate-input" min="0" max="24" value="24">
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="generateMaze()">🎲 Generate Maze</button>
+            <button onclick="randomizePositions()">🔀 Randomize Start/End</button>
+            <button onclick="solveMaze()">🔍 Check Solvability</button>
+            <button onclick="downloadMaze()">💾 Download PNG</button>
+            <button onclick="clearMaze()">🗑️ Clear</button>
+            <button onclick="toggleConsole()" id="consoleToggle">🔧 Show Console</button>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="mazeCanvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="info">
+            <strong>Current Parameters:</strong> <span id="currentParams">Select parameters and click "Generate"</span>
+        </div>
+        
+        <div id="solutionInfo" class="info" style="display: none; background: #f3e5f5; border-left-color: #9c27b0;">
+            <strong>Solvability Check Result:</strong> <span id="solutionResult"></span>
+        </div>
+        
+        <div class="algorithm-info">
+            <h3>Algorithm Information</h3>
+            <p id="algorithmDescription">Select an algorithm to see detailed description</p>
+        </div>
+        
+        <div id="debugConsole" class="debug-console" style="height: 0; overflow: hidden; padding: 0; margin: 0; opacity: 0;">
+            <h3>Debug Console</h3>
+            <div id="consoleOutput"></div>
+            <button onclick="clearConsole()" class="console-clear-btn">Clear Console</button>
+        </div>
+    </div>
+
+    <script>
+        let currentMaze = null;
+        let renderer = null;
+        let currentSolution = null;
+        let consoleVisible = false;
+        
+        // Custom console logging
+        function debugLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const consoleOutput = document.getElementById('consoleOutput');
+            
+            // Only show in debug console if console is visible
+            if (consoleOutput && consoleVisible) {
+                const entry = document.createElement('div');
+                entry.className = 'console-entry';
+                
+                const timestampSpan = document.createElement('span');
+                timestampSpan.className = 'console-timestamp';
+                timestampSpan.textContent = `[${timestamp}] `;
+                
+                const messageSpan = document.createElement('span');
+                messageSpan.className = type === 'error' ? 'console-error' : 'console-message';
+                messageSpan.textContent = message;
+                
+                entry.appendChild(timestampSpan);
+                entry.appendChild(messageSpan);
+                consoleOutput.appendChild(entry);
+                
+                // Auto-scroll to bottom
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+            
+            // Still log to browser console for development (but only during debug)
+            if (consoleVisible) {
+                if (type === 'error') {
+                    console.error(message);
+                } else {
+                    console.log(message);
+                }
+            }
+        }
+        
+        function initializeRandomPositions() {
+            const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+            
+            // Generate random start position
+            const startX = Math.floor(Math.random() * width);
+            const startY = Math.floor(Math.random() * height);
+            
+            // Generate random end position (different from start)
+            let endX, endY;
+            do {
+                endX = Math.floor(Math.random() * width);
+                endY = Math.floor(Math.random() * height);
+            } while (endX === startX && endY === startY);
+            
+            // Set the values to the input fields
+            document.getElementById('startX').value = startX;
+            document.getElementById('startY').value = startY;
+            document.getElementById('endX').value = endX;
+            document.getElementById('endY').value = endY;
+            
+            console.log(`Random positions: Start(${startX}, ${startY}), End(${endX}, ${endY})`);
+            // Only debug log if console is visible
+            if (consoleVisible) {
+                debugLog(`Random positions: Start(${startX}, ${startY}), End(${endX}, ${endY})`);
+            }
+        }
+        
+        function randomizePositions() {
+            initializeRandomPositions();
+            
+            // If maze is already generated, update visualization without regenerating the maze
+            if (currentMaze && renderer) {
+                const cellSize = parseInt(document.getElementById('cellSize').value);
+                const startX = parseInt(document.getElementById('startX').value);
+                const startY = parseInt(document.getElementById('startY').value);
+                const endX = parseInt(document.getElementById('endX').value);
+                const endY = parseInt(document.getElementById('endY').value);
+                
+                // Re-render the existing maze with new start/end positions
+                renderer.render(currentMaze, cellSize, startX, startY, endX, endY);
+                
+                // Update parameter display
+                const algorithm = document.getElementById('algorithm').value;
+                const width = currentMaze.width;
+                const height = currentMaze.height;
+                
+                document.getElementById('currentParams').innerHTML = 
+                    `${width}×${height}, algorithm: ${getAlgorithmName(algorithm)}, cell size: ${cellSize}px<br>` +
+                    `Start: (${startX}, ${startY}), End: (${endX}, ${endY})`;
+                
+                // Clear previous solution if any
+                currentSolution = null;
+                document.getElementById('solutionInfo').style.display = 'none';
+                
+                console.log(`Updated positions on existing maze: Start(${startX}, ${startY}), End(${endX}, ${endY})`);
+                // Only debug log if console is visible
+                if (consoleVisible) {
+                    debugLog(`Updated positions on existing maze: Start(${startX}, ${startY}), End(${endX}, ${endY})`);
+                }
+            }
+        }
+
+        class MazeGenerator {
+            constructor(width, height) {
+                this.width = width;
+                this.height = height;
+                this.maze = [];
+                this.initializeMaze();
+            }
+            
+            initializeMaze() {
+                this.maze = [];
+                for (let y = 0; y < this.height; y++) {
+                    this.maze[y] = [];
+                    for (let x = 0; x < this.width; x++) {
+                        this.maze[y][x] = {
+                            x: x,
+                            y: y,
+                            walls: { top: true, right: true, bottom: true, left: true },
+                            visited: false
+                        };
+                    }
+                }
+            }
+            
+            // Recursive Backtracking алгоритм
+            recursiveBacktracking() {
+                const stack = [];
+                const current = this.maze[0][0];
+                current.visited = true;
+                stack.push(current);
+                
+                while (stack.length > 0) {
+                    const current = stack[stack.length - 1];
+                    const neighbors = this.getUnvisitedNeighbors(current);
+                    
+                    if (neighbors.length > 0) {
+                        const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        this.removeWall(current, next);
+                        next.visited = true;
+                        stack.push(next);
+                    } else {
+                        stack.pop();
+                    }
+                }
+            }
+            
+            // Sidewinder алгоритм
+            sidewinder() {
+                for (let y = 0; y < this.height; y++) {
+                    let run = [];
+                    
+                    for (let x = 0; x < this.width; x++) {
+                        const current = this.maze[y][x];
+                        run.push(current);
+                        
+                        // Для первой строки - всегда соединяем с правым соседом (кроме последней ячейки)
+                        // Для остальных строк - случайно решаем завершить группу или продолжить
+                        const atEastEdge = (x === this.width - 1);
+                        const atNorthEdge = (y === 0);
+                        const shouldCloseRun = atEastEdge || (!atNorthEdge && Math.random() < 0.5);
+                        
+                        if (shouldCloseRun) {
+                            // Завершаем группу - выбираем случайную ячейку и соединяем с севером
+                            if (!atNorthEdge) {
+                                const member = run[Math.floor(Math.random() * run.length)];
+                                this.removeWall(member, this.maze[y-1][member.x]);
+                            }
+                            run = [];
+                        } else {
+                            // Продолжаем группу - соединяем с восточным соседом
+                            this.removeWall(current, this.maze[y][x+1]);
+                        }
+                    }
+                }
+            }
+
+            // Алгоритм "Острова-лабиринты" - создает изолированные саб-лабиринты
+            mazeIslands(islandDensity = 0.6) {
+                // Сначала создаем основной лабиринт
+                this.recursiveBacktracking();
+                
+                // Определяем количество островков в зависимости от размера лабиринта
+                const totalArea = this.width * this.height;
+                const islandCount = Math.max(1, Math.floor(totalArea * islandDensity * 0.005)); // Уменьшаем количество
+                
+                // Создаем изолированные островки-лабиринты с проверкой решаемости
+                let attempts = 0;
+                let successfulIslands = 0;
+                
+                while (successfulIslands < islandCount && attempts < islandCount * 3) {
+                    const originalMaze = this.copyMaze(); // Сохраняем состояние
+                    
+                    if (this.createSafeIsland()) {
+                        // Проверяем, что лабиринт остался решаемым
+                        if (this.checkConnectivity()) {
+                            successfulIslands++;
+                        } else {
+                            // Если лабиринт стал нерешаемым, откатываем изменения
+                            this.restoreMaze(originalMaze);
+                        }
+                    }
+                    attempts++;
+                }
+            }
+            
+            // Копируем текущее состояние лабиринта
+            copyMaze() {
+                const copy = [];
+                for (let y = 0; y < this.height; y++) {
+                    copy[y] = [];
+                    for (let x = 0; x < this.width; x++) {
+                        copy[y][x] = {
+                            walls: { ...this.maze[y][x].walls },
+                            visited: this.maze[y][x].visited
+                        };
+                    }
+                }
+                return copy;
+            }
+            
+            // Восстанавливаем состояние лабиринта
+            restoreMaze(savedMaze) {
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        this.maze[y][x].walls = { ...savedMaze[y][x].walls };
+                        this.maze[y][x].visited = savedMaze[y][x].visited;
+                    }
+                }
+            }
+            
+            // Проверяем связность лабиринта (можно ли добраться из любой точки в любую другую)
+            checkConnectivity() {
+                const visited = Array(this.height).fill(null).map(() => Array(this.width).fill(false));
+                const stack = [{x: 0, y: 0}];
+                let visitedCount = 0;
+                
+                while (stack.length > 0) {
+                    const {x, y} = stack.pop();
+                    
+                    if (x < 0 || x >= this.width || y < 0 || y >= this.height || visited[y][x]) {
+                        continue;
+                    }
+                    
+                    visited[y][x] = true;
+                    visitedCount++;
+                    
+                    // Проверяем все направления
+                    const cell = this.maze[y][x];
+                    
+                    if (!cell.walls.top) stack.push({x, y: y - 1});
+                    if (!cell.walls.right) stack.push({x: x + 1, y});
+                    if (!cell.walls.bottom) stack.push({x, y: y + 1});
+                    if (!cell.walls.left) stack.push({x: x - 1, y});
+                }
+                
+                // Проверяем, что достижимы все ячейки
+                return visitedCount === this.width * this.height;
+            }
+            
+            createSafeIsland() {
+                // Выбираем размер островка (уменьшаем максимальный размер)
+                const minSize = 4;
+                const maxSize = Math.min(Math.floor(this.width / 4), Math.floor(this.height / 4), 8);
+                
+                if (maxSize < minSize) return false;
+                
+                const islandWidth = minSize + Math.floor(Math.random() * (maxSize - minSize + 1));
+                const islandHeight = minSize + Math.floor(Math.random() * (maxSize - minSize + 1));
+                
+                // Выбираем позицию для островка (дальше от краев и углов)
+                const margin = 3;
+                const maxX = this.width - islandWidth - margin;
+                const maxY = this.height - islandHeight - margin;
+                
+                if (maxX < margin || maxY < margin) return false;
+                
+                // Избегаем углов - они критичны для связности
+                const centerX = Math.floor(this.width / 2);
+                const centerY = Math.floor(this.height / 2);
+                const maxDistance = Math.min(this.width, this.height) / 3;
+                
+                let attempts = 0;
+                let islandX, islandY;
+                
+                do {
+                    islandX = margin + Math.floor(Math.random() * (maxX - margin + 1));
+                    islandY = margin + Math.floor(Math.random() * (maxY - margin + 1));
+                    attempts++;
+                } while (attempts < 10 && 
+                        (Math.abs(islandX - centerX) > maxDistance || 
+                         Math.abs(islandY - centerY) > maxDistance));
+                
+                if (attempts >= 10) return false;
+                
+                // Создаем границу островка
+                this.createIslandBorder(islandX, islandY, islandWidth, islandHeight);
+                
+                // Заполняем внутренность островка мини-лабиринтом
+                this.fillIslandWithMaze(islandX, islandY, islandWidth, islandHeight);
+                
+                // Создаем входы в островок (гарантируем минимум 1 вход)
+                this.createSafeIslandEntrances(islandX, islandY, islandWidth, islandHeight);
+                
+                return true;
+            }
+            
+            createIslandBorder(x, y, width, height) {
+                // Создаем сплошную границу вокруг островка
+                for (let ix = 0; ix < width; ix++) {
+                    for (let iy = 0; iy < height; iy++) {
+                        const cellX = x + ix;
+                        const cellY = y + iy;
+                        
+                        if (cellX >= 0 && cellX < this.width && cellY >= 0 && cellY < this.height) {
+                            const cell = this.maze[cellY][cellX];
+                            
+                            // Граничные стены островка
+                            if (ix === 0) { // левая граница
+                                cell.walls.left = true;
+                                if (cellX > 0) this.maze[cellY][cellX - 1].walls.right = true;
+                            }
+                            if (ix === width - 1) { // правая граница
+                                cell.walls.right = true;
+                                if (cellX < this.width - 1) this.maze[cellY][cellX + 1].walls.left = true;
+                            }
+                            if (iy === 0) { // верхняя граница
+                                cell.walls.top = true;
+                                if (cellY > 0) this.maze[cellY - 1][cellX].walls.bottom = true;
+                            }
+                            if (iy === height - 1) { // нижняя граница
+                                cell.walls.bottom = true;
+                                if (cellY < this.height - 1) this.maze[cellY + 1][cellX].walls.top = true;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            fillIslandWithMaze(x, y, width, height) {
+                // Создаем временную сетку для островка
+                const islandMaze = [];
+                for (let iy = 0; iy < height; iy++) {
+                    islandMaze[iy] = [];
+                    for (let ix = 0; ix < width; ix++) {
+                        islandMaze[iy][ix] = {
+                            x: ix,
+                            y: iy,
+                            walls: { top: true, right: true, bottom: true, left: true },
+                            visited: false
+                        };
+                    }
+                }
+                
+                // Применяем Recursive Backtracking к островку
+                if (width > 2 && height > 2) {
+                    const stack = [];
+                    const startCell = islandMaze[1][1]; // начинаем не с угла
+                    startCell.visited = true;
+                    stack.push(startCell);
+                    
+                    while (stack.length > 0) {
+                        const current = stack[stack.length - 1];
+                        const neighbors = this.getIslandNeighbors(current, islandMaze, width, height);
+                        
+                        if (neighbors.length > 0) {
+                            const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                            this.removeIslandWall(current, next);
+                            next.visited = true;
+                            stack.push(next);
+                        } else {
+                            stack.pop();
+                        }
+                    }
+                }
+                
+                // Копируем результат обратно в основной лабиринт (только внутренние стены)
+                for (let iy = 1; iy < height - 1; iy++) {
+                    for (let ix = 1; ix < width - 1; ix++) {
+                        const globalX = x + ix;
+                        const globalY = y + iy;
+                        
+                        if (globalX < this.width && globalY < this.height) {
+                            const islandCell = islandMaze[iy][ix];
+                            const globalCell = this.maze[globalY][globalX];
+                            
+                            // Копируем только внутренние стены, не затрагивая границы
+                            if (ix > 1) globalCell.walls.left = islandCell.walls.left;
+                            if (ix < width - 2) globalCell.walls.right = islandCell.walls.right;
+                            if (iy > 1) globalCell.walls.top = islandCell.walls.top;
+                            if (iy < height - 2) globalCell.walls.bottom = islandCell.walls.bottom;
+                        }
+                    }
+                }
+            }
+            
+            getIslandNeighbors(cell, islandMaze, width, height) {
+                const neighbors = [];
+                const { x, y } = cell;
+                
+                if (y > 0 && !islandMaze[y-1][x].visited) neighbors.push(islandMaze[y-1][x]);
+                if (x < width - 1 && !islandMaze[y][x+1].visited) neighbors.push(islandMaze[y][x+1]);
+                if (y < height - 1 && !islandMaze[y+1][x].visited) neighbors.push(islandMaze[y+1][x]);
+                if (x > 0 && !islandMaze[y][x-1].visited) neighbors.push(islandMaze[y][x-1]);
+                
+                return neighbors;
+            }
+            
+            removeIslandWall(current, neighbor) {
+                const dx = current.x - neighbor.x;
+                const dy = current.y - neighbor.y;
+                
+                if (dx === 1) {
+                    current.walls.left = false;
+                    neighbor.walls.right = false;
+                } else if (dx === -1) {
+                    current.walls.right = false;
+                    neighbor.walls.left = false;
+                }
+                
+                if (dy === 1) {
+                    current.walls.top = false;
+                    neighbor.walls.bottom = false;
+                } else if (dy === -1) {
+                    current.walls.bottom = false;
+                    neighbor.walls.top = false;
+                }
+            }
+            
+            createSafeIslandEntrances(x, y, width, height) {
+                // Создаем обязательно 1 вход, возможно 2
+                const entranceCount = Math.random() < 0.8 ? 1 : 2;
+                const createdEntrances = [];
+                
+                for (let i = 0; i < entranceCount; i++) {
+                    let attempts = 0;
+                    let entranceCreated = false;
+                    
+                    while (!entranceCreated && attempts < 8) {
+                        // Выбираем случайную сторону границы
+                        const side = Math.floor(Math.random() * 4);
+                        let entranceX, entranceY;
+                        
+                        switch (side) {
+                            case 0: // верхняя граница
+                                entranceX = x + 1 + Math.floor(Math.random() * (width - 2));
+                                entranceY = y;
+                                break;
+                            case 1: // правая граница  
+                                entranceX = x + width - 1;
+                                entranceY = y + 1 + Math.floor(Math.random() * (height - 2));
+                                break;
+                            case 2: // нижняя граница
+                                entranceX = x + 1 + Math.floor(Math.random() * (width - 2));
+                                entranceY = y + height - 1;
+                                break;
+                            case 3: // левая граница
+                                entranceX = x;
+                                entranceY = y + 1 + Math.floor(Math.random() * (height - 2));
+                                break;
+                        }
+                        
+                        // Проверяем, что в этом месте еще нет входа
+                        const entranceKey = `${entranceX},${entranceY},${side}`;
+                        if (!createdEntrances.includes(entranceKey)) {
+                            this.createSingleEntrance(entranceX, entranceY, side);
+                            createdEntrances.push(entranceKey);
+                            entranceCreated = true;
+                        }
+                        
+                        attempts++;
+                    }
+                }
+            }
+            
+            createSingleEntrance(entranceX, entranceY, side) {
+                switch (side) {
+                    case 0: // верхняя граница
+                        this.maze[entranceY][entranceX].walls.top = false;
+                        if (entranceY > 0) this.maze[entranceY - 1][entranceX].walls.bottom = false;
+                        break;
+                    case 1: // правая граница  
+                        this.maze[entranceY][entranceX].walls.right = false;
+                        if (entranceX < this.width - 1) this.maze[entranceY][entranceX + 1].walls.left = false;
+                        break;
+                    case 2: // нижняя граница
+                        this.maze[entranceY][entranceX].walls.bottom = false;
+                        if (entranceY < this.height - 1) this.maze[entranceY + 1][entranceX].walls.top = false;
+                        break;
+                    case 3: // левая граница
+                        this.maze[entranceY][entranceX].walls.left = false;
+                        if (entranceX > 0) this.maze[entranceY][entranceX - 1].walls.right = false;
+                        break;
+                }
+            }
+            
+            getUnvisitedNeighbors(cell) {
+                const neighbors = [];
+                const { x, y } = cell;
+                
+                if (y > 0 && !this.maze[y-1][x].visited) neighbors.push(this.maze[y-1][x]);
+                if (x < this.width - 1 && !this.maze[y][x+1].visited) neighbors.push(this.maze[y][x+1]);
+                if (y < this.height - 1 && !this.maze[y+1][x].visited) neighbors.push(this.maze[y+1][x]);
+                if (x > 0 && !this.maze[y][x-1].visited) neighbors.push(this.maze[y][x-1]);
+                
+                return neighbors;
+            }
+            
+            removeWall(current, neighbor) {
+                const dx = current.x - neighbor.x;
+                const dy = current.y - neighbor.y;
+                
+                if (dx === 1) {
+                    current.walls.left = false;
+                    neighbor.walls.right = false;
+                } else if (dx === -1) {
+                    current.walls.right = false;
+                    neighbor.walls.left = false;
+                }
+                
+                if (dy === 1) {
+                    current.walls.top = false;
+                    neighbor.walls.bottom = false;
+                } else if (dy === -1) {
+                    current.walls.bottom = false;
+                    neighbor.walls.top = false;
+                }
+            }
+        }
+        
+        class MazeSolver {
+            constructor(maze) {
+                this.maze = maze;
+                this.solution = null;
+            }
+            
+            // Поиск пути методом поиска в глубину (DFS)
+            findPath(startX, startY, endX, endY) {
+                const visited = new Set();
+                const path = [];
+                
+                const dfs = (x, y) => {
+                    // Проверяем границы
+                    if (x < 0 || x >= this.maze.width || y < 0 || y >= this.maze.height) {
+                        return false;
+                    }
+                    
+                    // Проверяем, не посещали ли уже эту ячейку
+                    const key = `${x},${y}`;
+                    if (visited.has(key)) {
+                        return false;
+                    }
+                    
+                    // Добавляем в путь и помечаем как посещенную
+                    visited.add(key);
+                    path.push({x, y});
+                    
+                    // Проверяем, достигли ли цели
+                    if (x === endX && y === endY) {
+                        return true;
+                    }
+                    
+                    const currentCell = this.maze.maze[y][x];
+                    
+                    // Проверяем все возможные направления движения
+                    const directions = [
+                        {dx: 0, dy: -1, wall: 'top'},    // север
+                        {dx: 1, dy: 0, wall: 'right'},   // восток
+                        {dx: 0, dy: 1, wall: 'bottom'},  // юг  
+                        {dx: -1, dy: 0, wall: 'left'}    // запад
+                    ];
+                    
+                    for (const dir of directions) {
+                        // Проверяем, нет ли стены в этом направлении
+                        if (!currentCell.walls[dir.wall]) {
+                            const newX = x + dir.dx;
+                            const newY = y + dir.dy;
+                            
+                            if (dfs(newX, newY)) {
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    // Если не нашли путь, убираем эту ячейку из пути
+                    path.pop();
+                    return false;
+                };
+                
+                const found = dfs(startX, startY);
+                this.solution = found ? [...path] : null;
+                return found;
+            }
+            
+            getSolution() {
+                return this.solution;
+            }
+        }
+        
+        class MazeRenderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+            }
+            
+            render(maze, cellSize, startX = 0, startY = 0, endX = null, endY = null, solutionPath = null) {
+                const width = maze.width;
+                const height = maze.height;
+                
+                // Устанавливаем значения по умолчанию для конца
+                if (endX === null) endX = width - 1;
+                if (endY === null) endY = height - 1;
+                
+                this.canvas.width = width * cellSize;
+                this.canvas.height = height * cellSize;
+                
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Отрисовка пути решения (если есть)
+                if (solutionPath && solutionPath.length > 0) {
+                    this.ctx.fillStyle = '#ffeb3b'; // желтый цвет для пути
+                    for (const cell of solutionPath) {
+                        // Исключаем начальную и конечную ячейки из желтой заливки
+                        if (!((cell.x === startX && cell.y === startY) || (cell.x === endX && cell.y === endY))) {
+                            this.ctx.fillRect(
+                                cell.x * cellSize + 4,
+                                cell.y * cellSize + 4,
+                                cellSize - 8,
+                                cellSize - 8
+                            );
+                        }
+                    }
+                    
+                    // Рисуем линию пути
+                    this.ctx.strokeStyle = '#ff9800';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.beginPath();
+                    
+                    for (let i = 0; i < solutionPath.length; i++) {
+                        const cell = solutionPath[i];
+                        const centerX = cell.x * cellSize + cellSize / 2;
+                        const centerY = cell.y * cellSize + cellSize / 2;
+                        
+                        if (i === 0) {
+                            this.ctx.moveTo(centerX, centerY);
+                        } else {
+                            this.ctx.lineTo(centerX, centerY);
+                        }
+                    }
+                    
+                    this.ctx.stroke();
+                    this.ctx.lineWidth = 2; // восстанавливаем толщину для стен
+                }
+                
+                this.ctx.strokeStyle = '#2c3e50';
+                this.ctx.lineWidth = 2;
+                
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const cell = maze.maze[y][x];
+                        const px = x * cellSize;
+                        const py = y * cellSize;
+                        
+                        this.ctx.beginPath();
+                        
+                        if (cell.walls.top) {
+                            this.ctx.moveTo(px, py);
+                            this.ctx.lineTo(px + cellSize, py);
+                        }
+                        
+                        if (cell.walls.right) {
+                            this.ctx.moveTo(px + cellSize, py);
+                            this.ctx.lineTo(px + cellSize, py + cellSize);
+                        }
+                        
+                        if (cell.walls.bottom) {
+                            this.ctx.moveTo(px + cellSize, py + cellSize);
+                            this.ctx.lineTo(px, py + cellSize);
+                        }
+                        
+                        if (cell.walls.left) {
+                            this.ctx.moveTo(px, py + cellSize);
+                            this.ctx.lineTo(px, py);
+                        }
+                        
+                        this.ctx.stroke();
+                    }
+                }
+                
+                // Отрисовка начальной точки (зеленый)
+                this.ctx.fillStyle = '#4caf50';
+                this.ctx.fillRect(startX * cellSize + 2, startY * cellSize + 2, cellSize - 4, cellSize - 4);
+                
+                // Добавляем текст "START"
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = `${Math.max(8, cellSize * 0.3)}px Arial`;
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('S', startX * cellSize + cellSize/2, startY * cellSize + cellSize/2 + 3);
+                
+                // Отрисовка конечной точки (красный)
+                this.ctx.fillStyle = '#f44336';
+                this.ctx.fillRect(endX * cellSize + 2, endY * cellSize + 2, cellSize - 4, cellSize - 4);
+                
+                // Добавляем текст "END"
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillText('E', endX * cellSize + cellSize/2, endY * cellSize + cellSize/2 + 3);
+            }
+        }
+        
+        function initializeApp() {
+            const canvas = document.getElementById('mazeCanvas');
+            renderer = new MazeRenderer(canvas);
+            
+            // Update algorithm description
+            document.getElementById('algorithm').addEventListener('change', updateAlgorithmDescription);
+            document.getElementById('algorithm').addEventListener('change', toggleDensityControl);
+            updateAlgorithmDescription();
+            toggleDensityControl();
+            
+            // Update density value display
+            document.getElementById('wallDensity').addEventListener('input', function() {
+                document.getElementById('densityValue').textContent = this.value;
+            });
+            
+            // Auto-update coordinate ranges when dimensions change
+            document.getElementById('width').addEventListener('input', updateCoordinateRanges);
+            document.getElementById('height').addEventListener('input', updateCoordinateRanges);
+            
+            // Initialize coordinate ranges and randomize positions
+            updateCoordinateRanges();
+            
+            // Initialize with random positions
+            initializeRandomPositions();
+        }
+        
+        function generateMaze() {
+            const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+            const algorithm = document.getElementById('algorithm').value;
+            const cellSize = parseInt(document.getElementById('cellSize').value);
+            const startX = parseInt(document.getElementById('startX').value);
+            const startY = parseInt(document.getElementById('startY').value);
+            const endX = parseInt(document.getElementById('endX').value);
+            const endY = parseInt(document.getElementById('endY').value);
+            
+            // Validation of coordinates
+            if (startX < 0 || startX >= width || startY < 0 || startY >= height) {
+                alert(`Start coordinates must be within 0-${width-1} for X and 0-${height-1} for Y`);
+                return;
+            }
+            
+            if (endX < 0 || endX >= width || endY < 0 || endY >= height) {
+                alert(`End coordinates must be within 0-${width-1} for X and 0-${height-1} for Y`);
+                return;
+            }
+            
+            if (startX === endX && startY === endY) {
+                alert('Start and end positions cannot be the same!');
+                return;
+            }
+            
+            currentMaze = new MazeGenerator(width, height);
+            
+            switch(algorithm) {
+                case 'recursive-backtracking':
+                    currentMaze.recursiveBacktracking();
+                    break;
+                case 'sidewinder':
+                    currentMaze.sidewinder();
+                    break;
+                case 'maze-islands':
+                    const islandDensity = parseFloat(document.getElementById('wallDensity').value);
+                    currentMaze.mazeIslands(islandDensity);
+                    break;
+            }
+            
+            renderer.render(currentMaze, cellSize, startX, startY, endX, endY);
+            
+            // Reset previous solution
+            currentSolution = null;
+            document.getElementById('solutionInfo').style.display = 'none';
+            
+            // Log generation only if console is visible
+            if (consoleVisible) {
+                debugLog(`Generated ${width}×${height} maze using ${getAlgorithmName(algorithm)} algorithm`);
+            }
+            
+            document.getElementById('currentParams').innerHTML = 
+                `${width}×${height}, algorithm: ${getAlgorithmName(algorithm)}, cell size: ${cellSize}px<br>` +
+                `Start: (${startX}, ${startY}), End: (${endX}, ${endY})`;
+        }
+        
+        function solveMaze() {
+            if (!currentMaze) {
+                alert('Please generate a maze first!');
+                return;
+            }
+            
+            const startX = parseInt(document.getElementById('startX').value);
+            const startY = parseInt(document.getElementById('startY').value);
+            const endX = parseInt(document.getElementById('endX').value);
+            const endY = parseInt(document.getElementById('endY').value);
+            const cellSize = parseInt(document.getElementById('cellSize').value);
+            
+            const solver = new MazeSolver(currentMaze);
+            const solvable = solver.findPath(startX, startY, endX, endY);
+            
+            const solutionInfo = document.getElementById('solutionInfo');
+            const solutionResult = document.getElementById('solutionResult');
+            
+            if (solvable) {
+                currentSolution = solver.getSolution();
+                const pathLength = currentSolution.length;
+                
+                // Re-render maze with solution path
+                renderer.render(currentMaze, cellSize, startX, startY, endX, endY, currentSolution);
+                
+                solutionResult.innerHTML = `✅ Maze is solvable! Found a path with ${pathLength} steps.`;
+                solutionInfo.style.background = '#e8f5e8';
+                solutionInfo.style.borderLeftColor = '#4caf50';
+                
+                if (consoleVisible) {
+                    debugLog(`Maze solved! Path length: ${pathLength} steps`);
+                }
+            } else {
+                currentSolution = null;
+                solutionResult.innerHTML = `❌ Maze is not solvable! No path exists from start to end.`;
+                solutionInfo.style.background = '#ffebee';
+                solutionInfo.style.borderLeftColor = '#f44336';
+                
+                if (consoleVisible) {
+                    debugLog('Maze is not solvable - no path found', 'error');
+                }
+            }
+            
+            solutionInfo.style.display = 'block';
+        }
+        
+        function getAlgorithmName(algorithm) {
+            const names = {
+                'recursive-backtracking': 'Recursive Backtracking',
+                'sidewinder': 'Sidewinder',
+                'maze-islands': 'Maze Islands'
+            };
+            return names[algorithm] || algorithm;
+        }
+        
+        function toggleDensityControl() {
+            const algorithm = document.getElementById('algorithm').value;
+            const densityControl = document.getElementById('densityControl');
+            
+            if (algorithm === 'maze-islands') {
+                densityControl.style.display = 'flex';
+                
+                // Change parameter name for maze islands
+                const label = densityControl.querySelector('label');
+                label.textContent = 'Number of Islands:';
+            } else {
+                densityControl.style.display = 'none';
+            }
+        }
+        
+        function updateAlgorithmDescription() {
+            const algorithm = document.getElementById('algorithm').value;
+            const descriptions = {
+                'recursive-backtracking': 'Creates mazes with long winding paths. Uses a stack to track the path and backtrack when reaching dead ends.',
+                'sidewinder': 'Creates mazes row by row, forming horizontal corridors with random vertical passages.',
+                'maze-islands': 'Creates a main maze, then adds isolated "island mazes" - enclosed areas with internal labyrinths. These islands cannot be reached by simply walking around walls, only through special entrances. Parameter controls the number of islands.'
+            };
+            
+            document.getElementById('algorithmDescription').textContent = descriptions[algorithm];
+        }
+        
+        function updateCoordinateRanges() {
+            const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+            
+            // Update max values for coordinates
+            document.getElementById('startX').max = width - 1;
+            document.getElementById('startY').max = height - 1;
+            document.getElementById('endX').max = width - 1;
+            document.getElementById('endY').max = height - 1;
+            
+            // Update current values if they exceed maximum, or regenerate if dimensions changed significantly
+            const startX = document.getElementById('startX');
+            const startY = document.getElementById('startY');
+            const endX = document.getElementById('endX');
+            const endY = document.getElementById('endY');
+            
+            const currentStartX = parseInt(startX.value) || 0;
+            const currentStartY = parseInt(startY.value) || 0;
+            const currentEndX = parseInt(endX.value) || width - 1;
+            const currentEndY = parseInt(endY.value) || height - 1;
+            
+            if (currentStartX >= width || currentStartY >= height || 
+                currentEndX >= width || currentEndY >= height) {
+                // If current positions are out of bounds, regenerate random positions
+                initializeRandomPositions();
+            } else {
+                // Just update the max values
+                if (parseInt(startX.value) >= width) startX.value = width - 1;
+                if (parseInt(startY.value) >= height) startY.value = height - 1;
+                if (parseInt(endX.value) >= width) endX.value = width - 1;
+                if (parseInt(endY.value) >= height) endY.value = height - 1;
+            }
+        }
+        
+        function downloadMaze() {
+            if (!currentMaze) {
+                alert('Please generate a maze first!');
+                return;
+            }
+            
+            const canvas = document.getElementById('mazeCanvas');
+            const link = document.createElement('a');
+            link.download = `maze-${currentMaze.width}x${currentMaze.height}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        function clearMaze() {
+            const canvas = document.getElementById('mazeCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            document.getElementById('currentParams').textContent = 'Select parameters and click "Generate"';
+            document.getElementById('solutionInfo').style.display = 'none';
+            currentMaze = null;
+            currentSolution = null;
+        }
+        
+        function toggleConsole() {
+            const debugConsole = document.getElementById('debugConsole');
+            const toggleButton = document.getElementById('consoleToggle');
+            
+            if (!consoleVisible) {
+                // Show console - restore size and visibility
+                debugConsole.style.height = 'auto';
+                debugConsole.style.maxHeight = '300px';
+                debugConsole.style.padding = '15px';
+                debugConsole.style.margin = '20px 0 0 0';
+                debugConsole.style.opacity = '1';
+                debugConsole.style.overflow = 'auto';
+                
+                toggleButton.textContent = '🔧 Hide Console';
+                consoleVisible = true;
+                debugLog('Debug console activated');
+            } else {
+                // Hide console - shrink to zero
+                debugConsole.style.height = '0';
+                debugConsole.style.maxHeight = '0';
+                debugConsole.style.padding = '0';
+                debugConsole.style.margin = '0';
+                debugConsole.style.opacity = '0';
+                debugConsole.style.overflow = 'hidden';
+                
+                toggleButton.textContent = '🔧 Show Console';
+                consoleVisible = false;
+            }
+        }
+        
+        function clearConsole() {
+            const consoleOutput = document.getElementById('consoleOutput');
+            if (consoleOutput && consoleVisible) {
+                consoleOutput.innerHTML = '';
+                debugLog('Console cleared');
+            }
+        }
+        
+        // Initialize application when page loads
+        window.addEventListener('load', initializeApp);
+    </script>
+</body>
+</html>
