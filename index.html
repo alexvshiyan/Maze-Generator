@@ -496,7 +496,81 @@
                     debugLog(`Updated positions on existing maze: Start(${startX}, ${startY}), End(${endX}, ${endY})`);
                 }
             }
+       }
+
+        // Добавьте эту функцию в ваш JavaScript код
+
+function updateStartEndPositions() {
+    // Обновляем позиции Start/End только если лабиринт уже существует
+    if (currentMaze && renderer) {
+        const cellSize = parseInt(document.getElementById('cellSize').value);
+        const startX = parseInt(document.getElementById('startX').value);
+        const startY = parseInt(document.getElementById('startY').value);
+        const endX = parseInt(document.getElementById('endX').value);
+        const endY = parseInt(document.getElementById('endY').value);
+        
+        // Проверяем валидность координат
+        if (startX >= 0 && startX < currentMaze.width && 
+            startY >= 0 && startY < currentMaze.height &&
+            endX >= 0 && endX < currentMaze.width && 
+            endY >= 0 && endY < currentMaze.height) {
+            
+            // Перерисовываем лабиринт с новыми позициями (сохраняем решение если есть)
+            renderer.render(currentMaze, cellSize, startX, startY, endX, endY, currentSolution);
+            
+            // Обновляем информацию о параметрах
+            const algorithm = document.getElementById('algorithm').value;
+            document.getElementById('currentParams').innerHTML = 
+                `${currentMaze.width}×${currentMaze.height}, algorithm: ${getAlgorithmName(algorithm)}, cell size: ${cellSize}px<br>` +
+                `Start: (${startX}, ${startY}), End: (${endX}, ${endY})`;
+                
+            // Если было решение, очищаем его так как координаты изменились
+            if (currentSolution && 
+                (startX !== currentSolution[0].x || startY !== currentSolution[0].y ||
+                 endX !== currentSolution[currentSolution.length-1].x || 
+                 endY !== currentSolution[currentSolution.length-1].y)) {
+                currentSolution = null;
+                document.getElementById('solutionInfo').style.display = 'none';
+            }
         }
+    }
+}
+
+// В функции initializeApp() добавьте эти строки после существующих event listeners:
+
+function initializeApp() {
+    const canvas = document.getElementById('mazeCanvas');
+    renderer = new MazeRenderer(canvas);
+    
+    // Существующие event listeners...
+    document.getElementById('algorithm').addEventListener('change', updateAlgorithmDescription);
+    document.getElementById('algorithm').addEventListener('change', toggleDensityControl);
+    updateAlgorithmDescription();
+    toggleDensityControl();
+    
+    document.getElementById('wallDensity').addEventListener('input', function() {
+        document.getElementById('densityValue').textContent = this.value;
+    });
+    
+    document.getElementById('width').addEventListener('input', updateCoordinateRanges);
+    document.getElementById('height').addEventListener('input', updateCoordinateRanges);
+    
+    // НОВЫЕ event listeners для обновления координат в реальном времени:
+    document.getElementById('startX').addEventListener('input', updateStartEndPositions);
+    document.getElementById('startY').addEventListener('input', updateStartEndPositions);
+    document.getElementById('endX').addEventListener('input', updateStartEndPositions);
+    document.getElementById('endY').addEventListener('input', updateStartEndPositions);
+    
+    // Также добавляем для изменения размера ячеек
+    document.getElementById('cellSize').addEventListener('input', function() {
+        if (currentMaze && renderer) {
+            updateStartEndPositions();
+        }
+    });
+    
+    updateCoordinateRanges();
+    initializeRandomPositions();
+}
 
         class MazeGenerator {
             constructor(width, height) {
@@ -1124,6 +1198,19 @@
             // Auto-update coordinate ranges when dimensions change
             document.getElementById('width').addEventListener('input', updateCoordinateRanges);
             document.getElementById('height').addEventListener('input', updateCoordinateRanges);
+
+            // НОВЫЕ event listeners для обновления координат в реальном времени:
+            document.getElementById('startX').addEventListener('input', updateStartEndPositions);
+            document.getElementById('startY').addEventListener('input', updateStartEndPositions);
+            document.getElementById('endX').addEventListener('input', updateStartEndPositions);
+            document.getElementById('endY').addEventListener('input', updateStartEndPositions);
+
+            // Также для размера ячеек
+            document.getElementById('cellSize').addEventListener('input', function() {
+                if (currentMaze && renderer) {
+                    updateStartEndPositions();
+                }
+            });
             
             // Initialize coordinate ranges and randomize positions
             updateCoordinateRanges();
