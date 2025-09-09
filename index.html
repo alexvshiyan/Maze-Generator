@@ -156,7 +156,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 10px 5px;
+            margin: 0;
         }
         
         button:hover {
@@ -168,13 +168,42 @@
             transform: translateY(0);
         }
         
-        .button-group {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-        }
-        
+        /* Замените существующий .button-group в вашем CSS на этот код */
+
+    .button-group {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+    gap: 15px 20px; /* vertical gap, horizontal gap */
+        margin-bottom: 30px;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 20px;
+    }
+
+    /* Убираем margin с отдельных кнопок, так как теперь используем gap в grid */
+    .button-group button {
+    margin: 0; /* Заменяет существующий margin: 10px 5px; */
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .button-group {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 12px 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .button-group {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(6, 1fr);
+        gap: 10px;
+        padding: 0 10px;
+    }
+}
         .canvas-container {
             text-align: center;
             background: #f8f9fa;
